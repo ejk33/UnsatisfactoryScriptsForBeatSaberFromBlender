@@ -3,6 +3,7 @@ import mathutils
 
 templatePath = bpy.path.abspath('//../swtemplate')
 swPath = bpy.path.abspath('//../ExpertPlusStandard_ScuffedWalls.sw')
+contentPath = bpy.path.abspath('//../swcontent.sw')
 
 buff = []
 counter = [0]
@@ -17,6 +18,7 @@ def write(s):
     buff.append(s)
 
 def writeSwFile():
+    write('# Generated with UnsatisfactoryScriptsForBeatSaberFromBlender')
     templateFile = open(templatePath, 'r')
     templateContent = templateFile.read()
     templateFile.close()
@@ -26,6 +28,10 @@ def writeSwFile():
     swFile = open(swPath, 'w')
     swFile.write(content)
     swFile.close()
+    
+    contentFile = open(contentPath, 'w')
+    contentFile.write('\n'.join(buff))
+    contentFile.close()
 
 START_FRAME = 0
 END_FRAME = 991
@@ -148,7 +154,7 @@ def exportBlocks(collectionName):
 
 BUCKET_DURATION_FRAMES = 1
 BUCKET_DURATION_BEATS = BUCKET_DURATION_FRAMES / FRAMES_PER_BEAT
-DRAW_DISTANCE_FRAMES = 35
+DRAW_DISTANCE_FRAMES = 50
 PERSISTENCE_FRAMES = 3 # How many frames before despawn after passing by the player
 
 def computeBucketNumber(positionOrFrame):
@@ -173,6 +179,12 @@ def exportWalls(collectionName):
         bucket = getOrCreateBucket(buckets, bucketNumber)
         bucket.append(obj)
     
+    # Expert frames 2, 3, 4 + 5 6....
+    # 2 .. 3 .. 4 .. 5 .. 6 ..
+    # duration = 3
+    # start = 2
+    # end = 5
+    
     for bucketNumber in buckets:
         bucket = buckets[bucketNumber]
         print('Bucket {} has {}'.format(bucketNumber, len(bucket)))
@@ -183,12 +195,12 @@ def exportWalls(collectionName):
             startFrame = START_FRAME
         if (endFrame > END_FRAME):
             endFrame = END_FRAME
-        bucketDurationFrames = endFrame - startFrame
+        bucketDurationFrames = endFrame - startFrame + 1
         bucketDurationBeats = bucketDurationFrames / FRAMES_PER_BEAT
         bucketStartBeat = startFrame / FRAMES_PER_BEAT
         trackPositionAnimation = '[0,0,{},0],[0,0,{},1]'.format(
             -1.0 * startFrame * MOVEMENT_METERS_PER_FRAME,
-            -1.0 * endFrame * MOVEMENT_METERS_PER_FRAME
+            -1.0 * (endFrame + BUCKET_DURATION_FRAMES + PERSISTENCE_FRAMES + 5) * MOVEMENT_METERS_PER_FRAME
         )
         # Select objects
         deselectAll()
@@ -219,7 +231,9 @@ def exportWalls(collectionName):
         write('  AnimatePosition:{}'.format(trackPositionAnimation))
         write('  Interactable:false')
         write('  Fake:true')
-   
+
+# ===== MAIN ==============================================================
+
 exportWalls('walls')
 exportBlocks('blocks')
 writeSwFile()
